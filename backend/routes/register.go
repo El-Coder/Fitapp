@@ -1,0 +1,14 @@
+package routes
+
+import (
+	"fitapp-backend/handlers"
+
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/labstack/echo/v4"
+)
+
+func RegisterRoutes(e *echo.Echo, client *dynamodb.Client) {
+	e.GET("/ping-db", handlers.HealthCheckHandler(client))
+	e.POST("/api/link", handlers.LinkItemHandler(client))
+	e.GET("/api/all-linked-items", handlers.GetAllLinkedItemsHandler(client))
+}
