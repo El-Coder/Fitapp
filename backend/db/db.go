@@ -62,6 +62,55 @@ type TableBasics struct {
 	TableName      string
 }
 
+// CreateItemsTable creates the "items" table if it doesn't already exist.
+func (basics TableBasics) CreateItemsTable(ctx context.Context) (*types.TableDescription, error) {
+	// Check if the table already exists
+	out, err := basics.DynamoDbClient.ListTables(ctx, &dynamodb.ListTablesInput{})
+	if err != nil {
+		log.Printf("Failed to list tables: %v", err)
+		return nil, err
+	}
+	for _, table := range out.TableNames {
+		if table == basics.TableName {
+			log.Printf("Table %v already exists. Skipping creation.", basics.TableName)
+			return nil, nil
+		}
+	}
+
+	table, err := basics.DynamoDbClient.CreateTable(ctx, &dynamodb.CreateTableInput{
+		AttributeDefinitions: []types.AttributeDefinition{
+			{
+				AttributeName: aws.String("item_id"),
+				AttributeType: types.ScalarAttributeTypeS,
+			},
+		},
+		KeySchema: []types.KeySchemaElement{
+			{
+				AttributeName: aws.String("item_id"),
+				KeyType:       types.KeyTypeHash,
+			},
+		},
+		TableName:   aws.String(basics.TableName),
+		BillingMode: types.BillingModePayPerRequest,
+	})
+	if err != nil {
+		log.Printf("Couldn't create table %v. Reason: %v", basics.TableName, err)
+		return nil, err
+	}
+
+	waiter := dynamodb.NewTableExistsWaiter(basics.DynamoDbClient)
+	err = waiter.Wait(ctx, &dynamodb.DescribeTableInput{
+		TableName: aws.String(basics.TableName),
+	}, 5*time.Minute)
+	if err != nil {
+		log.Printf("Table waiter failed for %v: %v", basics.TableName, err)
+		return nil, err
+	}
+
+	log.Printf("Created table: %v", basics.TableName)
+	return table.TableDescription, nil
+}
+
 // / CreateFitsTable creates the "fits" table if it doesn't already exist.
 func (basics TableBasics) CreateFitsTable(ctx context.Context) (*types.TableDescription, error) {
 	// Check if the table already exists

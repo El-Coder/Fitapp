@@ -18,7 +18,7 @@ export default function Home() {
   const [message, setMessage] = useState("");
 
   // Gallery state: all linked items grouped by fit
-  const [gallery, setGallery] = useState<{ fit_id: string; linked_item_ids: string[] }[]>([]);
+  const [gallery, setGallery] = useState<{ fit_id: string; fit_name: string; linked_items: { item_id: string; item_name: string }[] }[]>([]);
 
   // Fetch gallery data from backend
   const fetchGallery = async () => {
@@ -37,15 +37,28 @@ export default function Home() {
     fetchGallery();
   }, []);
 
+  // Fetch fits and items from backend
   useEffect(() => {
-    setFits([
-      { id: "fit1", name: "Fit #1" },
-      { id: "fit2", name: "Fit #2" },
-    ]);
-    setItems([
-      { id: "item1", name: "Jacket #1" },
-      { id: "item2", name: "Jacket #2" },
-    ]);
+    const fetchFits = async () => {
+      try {
+        const res = await fetch("http://localhost:8080/api/fits");
+        if (res.ok) {
+          const data = await res.json();
+          setFits((data.fits || []).map((fit: any) => ({ id: fit.fit_id, name: fit.fit_name })));
+        }
+      } catch (e) {}
+    };
+    const fetchItems = async () => {
+      try {
+        const res = await fetch("http://localhost:8080/api/items");
+        if (res.ok) {
+          const data = await res.json();
+          setItems((data || []).map((item: any) => ({ id: item.item_id, name: item.item_name })));
+        }
+      } catch (e) {}
+    };
+    fetchFits();
+    fetchItems();
   }, [setFits, setItems]);
 
   const handleLink = async () => {
@@ -83,19 +96,17 @@ export default function Home() {
         ) : (
           <ul className="space-y-2">
             {gallery.map((fit) => (
-              <li key={fit.fit_id}>
-                <span className="font-bold">
-                  {fits.find(f => f.id === fit.fit_id)?.name || fit.fit_id}:
-                </span>{" "}
-                {fit.linked_item_ids && fit.linked_item_ids.length > 0 ? (
-                  fit.linked_item_ids
-                    .map(itemId => items.find(i => i.id === itemId)?.name || itemId)
-                    .join(", ")
-                ) : (
-                  <span className="text-gray-400">No linked items</span>
-                )}
-              </li>
-            ))}
+  <li key={fit.fit_id}>
+    <span className="font-bold">
+      {fit.fit_name || fit.fit_id}:
+    </span>{" "}
+    {fit.linked_items && fit.linked_items.length > 0 ? (
+      fit.linked_items.map(item => item.item_name || item.item_id).join(", ")
+    ) : (
+      <span className="text-gray-400">No linked items</span>
+    )}
+  </li>
+))}
           </ul>
         )}
       </div>
@@ -111,9 +122,9 @@ export default function Home() {
           onChange={(e) => selectFit(e.target.value)}
         >
           <option value="">-- Choose a fit --</option>
-          {fits.map((fit) => (
-            <option key={fit.id} value={fit.id}>
-              {fit.name}
+          {gallery.map((fit) => (
+            <option key={fit.fit_id} value={fit.fit_id}>
+              {fit.fit_name || fit.fit_id}
             </option>
           ))}
         </select>
