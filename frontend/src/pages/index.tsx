@@ -20,14 +20,26 @@ export default function Home() {
   // Gallery state: all linked items grouped by fit
   const [gallery, setGallery] = useState<{ fit_id: string; fit_name: string; linked_items: { item_id: string; item_name: string }[] }[]>([]);
 
-  // Fetch gallery data from backend
+  // Fetch gallery data from backend using new /api/links/:fit_id endpoint
   const fetchGallery = async () => {
     try {
-      const res = await fetch("http://localhost:8080/api/all-linked-items");
-      if (res.ok) {
-        const data = await res.json();
-        setGallery(data.fits || []);
-      }
+      const fitsRes = await fetch("http://localhost:8080/api/fits");
+      if (!fitsRes.ok) return;
+      const fitsData = await fitsRes.json();
+      const fits = (fitsData.fits || []) as { fit_id: string; fit_name: string }[];
+      const galleryData: { fit_id: string; fit_name: string; linked_items: { item_id: string; item_name: string }[] }[] = [];
+      await Promise.all(
+        fits.map(async (fit) => {
+          const linksRes = await fetch(`http://localhost:8080/api/links/${fit.fit_id}`);
+          let linked_items: { item_id: string; item_name: string }[] = [];
+          if (linksRes.ok) {
+            const linksData = await linksRes.json();
+            linked_items = (linksData.links || []).map((link: any) => ({ item_id: link.item_id, item_name: link.item_name }));
+          }
+          galleryData.push({ fit_id: fit.fit_id, fit_name: fit.fit_name, linked_items });
+        })
+      );
+      setGallery(galleryData);
     } catch (e) {
       // Optionally handle error
     }
@@ -122,9 +134,9 @@ export default function Home() {
           onChange={(e) => selectFit(e.target.value)}
         >
           <option value="">-- Choose a fit --</option>
-          {gallery.map((fit) => (
-            <option key={fit.fit_id} value={fit.fit_id}>
-              {fit.fit_name || fit.fit_id}
+          {fits.map((fit) => (
+            <option key={fit.id} value={fit.id}>
+              {fit.name || fit.id}
             </option>
           ))}
         </select>

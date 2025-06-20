@@ -47,9 +47,17 @@ func GetFitsHandler(client *dynamodb.Client) echo.HandlerFunc {
 		}
 		fits := []models.Fit{}
 		for _, v := range out.Items {
+			fitID := ""
+			if av, ok := v["fit_id"].(*types.AttributeValueMemberS); ok && av != nil {
+				fitID = av.Value
+			}
+			fitName := ""
+			if av, ok := v["fit_name"].(*types.AttributeValueMemberS); ok && av != nil {
+				fitName = av.Value
+			}
 			fit := models.Fit{
-				FitID:   v["fit_id"].(*types.AttributeValueMemberS).Value,
-				FitName: v["fit_name"].(*types.AttributeValueMemberS).Value,
+				FitID:   fitID,
+				FitName: fitName,
 			}
 			fits = append(fits, fit)
 		}

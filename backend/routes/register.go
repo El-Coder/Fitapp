@@ -19,4 +19,7 @@ func RegisterRoutes(e *echo.Echo, client *dynamodb.Client) {
 	// New fit endpoints
 	e.POST("/api/fits", handlers.CreateFitHandler(client))
 	e.GET("/api/fits", handlers.GetFitsHandler(client))
+
+	// New links endpoint
+	e.GET("/api/links/:fit_id", handlers.GetLinksForFitHandler(client))
 }

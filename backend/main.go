@@ -34,11 +34,23 @@ func EnsureItemsTable(client *dynamodb.Client) {
 	}
 }
 
+func EnsureLinksTable(client *dynamodb.Client) {
+	tb := db.TableBasics{
+		DynamoDbClient: client,
+		TableName:      "links",
+	}
+	_, err := tb.CreateLinksTable(context.TODO())
+	if err != nil {
+		log.Fatalf("Failed to ensure 'links' table: %v", err)
+	}
+}
+
 func main() {
 	client := db.CreateLocalClient()
 	db.WaitForDynamoReady("http://dynamodb-local:8000")
 	EnsureFitsTable(client)
 	EnsureItemsTable(client)
+	EnsureLinksTable(client)
 
 	e := echo.New()
 	e.Use(middleware.CORS())
