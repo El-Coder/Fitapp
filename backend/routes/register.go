@@ -10,7 +10,6 @@ import (
 func RegisterRoutes(e *echo.Echo, client *dynamodb.Client) {
 	e.GET("/ping-db", handlers.HealthCheckHandler(client))
 	e.POST("/api/link", handlers.LinkItemHandler(client))
-	e.GET("/api/all-linked-items", handlers.GetAllLinkedItemsHandler(client))
 
 	// New item endpoints
 	e.POST("/api/items", handlers.CreateItemHandler(client))
